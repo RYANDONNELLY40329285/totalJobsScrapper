@@ -1,9 +1,9 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
-export async function initDb() {
+export async function initDb(dbPath = "./jobs.db") {
   return open({
-    filename: "./jobs.db",
+    filename: dbPath,
     driver: sqlite3.Database,
   });
 }
