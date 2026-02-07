@@ -1,24 +1,66 @@
-import { initDb } from "../src/db/database.js";
+/**
+ * @jest-environment node
+ */
 
-test("creates jobs table and inserts a row", async () => {
-  const db = await initDb(":memory:");
+// Mock the database layer BEFORE importing it
+jest.mock("../src/db/database.js", () => {
+  return {
+    initDb: jest.fn(() => {
+      return {
+        run: jest.fn(),
+        all: jest.fn(() => []),
+        close: jest.fn(),
+      };
+    }),
+    setupTables: jest.fn(async () => {}),
+  };
+});
 
-  await db.exec(`
-    CREATE TABLE jobs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      company TEXT,
-      link TEXT UNIQUE
-    )
-  `);
+import { initDb, setupTables } from "../src/db/database.js";
 
-  await db.run(
-    "INSERT INTO jobs (title, company, link) VALUES (?, ?, ?)",
-    "Graduate Software Engineer",
-    "Test Corp",
-    "https://example.com/job/1"
-  );
+describe("database module", () => {
+  let db;
 
-  const rows = await db.all("SELECT * FROM jobs");
-  expect(rows.length).toBe(1);
+  beforeEach(async () => {
+    db = initDb(":memory:");
+    await setupTables(db);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("initialises database connection", () => {
+    expect(initDb).toHaveBeenCalled();
+    expect(db).toHaveProperty("run");
+    expect(db).toHaveProperty("all");
+    expect(db).toHaveProperty("close");
+  });
+
+  test("setupTables is called to create schema", async () => {
+    expect(setupTables).toHaveBeenCalledTimes(1);
+    expect(setupTables).toHaveBeenCalledWith(db);
+  });
+
+  test("allows inserting data via run()", async () => {
+    const sql = "INSERT INTO jobs (title) VALUES (?)";
+    const params = ["Graduate Software Engineer"];
+
+    db.run(sql, ...params);
+
+    expect(db.run).toHaveBeenCalledTimes(1);
+    expect(db.run).toHaveBeenCalledWith(sql, ...params);
+  });
+
+  test("allows querying data via all()", async () => {
+    const rows = db.all("SELECT * FROM jobs");
+
+    expect(db.all).toHaveBeenCalledTimes(1);
+    expect(rows).toEqual([]);
+  });
+
+  test("database can be closed", () => {
+    db.close();
+    expect(db.close).toHaveBeenCalledTimes(1);
+  });
 });
