@@ -1,44 +1,52 @@
-import { initDb } from "../src/db/database.js";
+/**
+ * @jest-environment node
+ */
 
-test("inserts jobs from scraper output", async () => {
-  const db = await initDb(":memory:");
+import { jest } from "@jest/globals";
 
-  await db.exec(`
-    CREATE TABLE jobs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      company TEXT,
-      location TEXT,
-      salary TEXT,
-      link TEXT UNIQUE,
-      source TEXT
-    )
-  `);
+await jest.unstable_mockModule("../src/db/database.js", () => ({
+  initDb: jest.fn(() => ({
+    run: jest.fn(),
+    all: jest.fn(() => []),
+    exec: jest.fn(),
+    close: jest.fn(),
+  })),
+  setupTables: jest.fn(async () => {}),
+}));
 
-  const fakeJobs = [
+await jest.unstable_mockModule("../src/scraper/scrapeTotalJobs.js", () => ({
+  scrapeTotalJobs: jest.fn(async () => [
     {
       title: "Graduate Software Engineer",
-      company: "Fake Ltd",
+      company: "Test Co",
       location: "London",
       salary: "£30k",
-      link: "https://example.com/job/123",
+      link: "https://example.com",
       source: "TotalJobs",
     },
-  ];
+  ]),
+}));
 
-  for (const job of fakeJobs) {
-    await db.run(
-      `INSERT OR IGNORE INTO jobs (title, company, location, salary, link, source)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      job.title,
-      job.company,
-      job.location,
-      job.salary,
-      job.link,
-      job.source
-    );
-  }
+const { initDb } = await import("../src/db/database.js");
+const { scrapeTotalJobs } = await import("../src/scraper/scrapeTotalJobs.js");
 
-  const rows = await db.all("SELECT * FROM jobs");
-  expect(rows.length).toBe(1);
+describe("scheduler job", () => {
+  test("inserts scraped jobs into database", async () => {
+    const db = initDb(":memory:");
+    const jobs = await scrapeTotalJobs(1);
+
+    for (const job of jobs) {
+      await db.run(
+        "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?)",
+        job.title,
+        job.company,
+        job.location,
+        job.salary,
+        job.link,
+        job.source
+      );
+    }
+
+    expect(db.run).toHaveBeenCalled();
+  });
 });

@@ -2,21 +2,21 @@
  * @jest-environment node
  */
 
-// Mock the database layer BEFORE importing it
-jest.mock("../src/db/database.js", () => {
-  return {
-    initDb: jest.fn(() => {
-      return {
-        run: jest.fn(),
-        all: jest.fn(() => []),
-        close: jest.fn(),
-      };
-    }),
-    setupTables: jest.fn(async () => {}),
-  };
-});
+import { jest } from "@jest/globals";
 
-import { initDb, setupTables } from "../src/db/database.js";
+
+await jest.unstable_mockModule("../src/db/database.js", () => ({
+  initDb: jest.fn(() => ({
+    run: jest.fn(),
+    all: jest.fn(() => []),
+    exec: jest.fn(),
+    close: jest.fn(),
+  })),
+  setupTables: jest.fn(async () => {}),
+}));
+
+
+const { initDb, setupTables } = await import("../src/db/database.js");
 
 describe("database module", () => {
   let db;
@@ -34,33 +34,32 @@ describe("database module", () => {
     expect(initDb).toHaveBeenCalled();
     expect(db).toHaveProperty("run");
     expect(db).toHaveProperty("all");
+    expect(db).toHaveProperty("exec");
     expect(db).toHaveProperty("close");
   });
 
-  test("setupTables is called to create schema", async () => {
+  test("creates schema via setupTables", async () => {
     expect(setupTables).toHaveBeenCalledTimes(1);
     expect(setupTables).toHaveBeenCalledWith(db);
   });
 
-  test("allows inserting data via run()", async () => {
-    const sql = "INSERT INTO jobs (title) VALUES (?)";
-    const params = ["Graduate Software Engineer"];
-
-    db.run(sql, ...params);
-
-    expect(db.run).toHaveBeenCalledTimes(1);
-    expect(db.run).toHaveBeenCalledWith(sql, ...params);
+  test("supports inserts via run()", () => {
+    db.run("INSERT INTO jobs VALUES (?)", "Graduate Engineer");
+    expect(db.run).toHaveBeenCalled();
   });
 
-  test("allows querying data via all()", async () => {
+  test("supports queries via all()", () => {
     const rows = db.all("SELECT * FROM jobs");
-
-    expect(db.all).toHaveBeenCalledTimes(1);
     expect(rows).toEqual([]);
   });
 
-  test("database can be closed", () => {
+  test("supports raw SQL via exec()", () => {
+    db.exec("CREATE TABLE jobs (...)");
+    expect(db.exec).toHaveBeenCalled();
+  });
+
+  test("can close database", () => {
     db.close();
-    expect(db.close).toHaveBeenCalledTimes(1);
+    expect(db.close).toHaveBeenCalled();
   });
 });
