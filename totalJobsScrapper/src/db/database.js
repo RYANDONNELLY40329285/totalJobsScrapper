@@ -1,11 +1,13 @@
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import Database from "better-sqlite3";
 
 export async function initDb(dbPath = "./jobs.db") {
-  return open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-  });
+  const db = new Database(dbPath);
+  return {
+    run: (sql, ...params) => db.prepare(sql).run(...params),
+    all: (sql, ...params) => db.prepare(sql).all(...params),
+    exec: (sql) => db.exec(sql),
+    close: () => db.close(),
+  };
 }
 
 export async function setupTables(db) {
