@@ -11,16 +11,16 @@ export function initDb(dbPath = "./jobs.db") {
 
 
 export async function setupTables(db) {
-  await db.exec(`
+  await db.run(`
     CREATE TABLE IF NOT EXISTS jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
+      title TEXT,
       company TEXT,
       location TEXT,
       salary TEXT,
       link TEXT UNIQUE,
       source TEXT,
       scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    )
   `);
 }

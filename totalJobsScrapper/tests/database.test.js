@@ -6,12 +6,11 @@ import { jest } from "@jest/globals";
 
 
 await jest.unstable_mockModule("../src/db/database.js", () => ({
-  initDb: jest.fn(() => ({
-    run: jest.fn(),
-    all: jest.fn(() => []),
-    exec: jest.fn(),
-    close: jest.fn(),
-  })),
+initDb: jest.fn(() => ({
+  run: jest.fn(),
+  all: jest.fn(() => []),
+  close: jest.fn(),
+})),
   setupTables: jest.fn(async () => {}),
 }));
 
