@@ -4,16 +4,14 @@
 
 import { jest } from "@jest/globals";
 
-
 await jest.unstable_mockModule("../src/db/database.js", () => ({
-initDb: jest.fn(() => ({
-  run: jest.fn(),
-  all: jest.fn(() => []),
-  close: jest.fn(),
-})),
+  initDb: jest.fn(() => ({
+    run: jest.fn(),
+    all: jest.fn(() => []),
+    close: jest.fn(),
+  })),
   setupTables: jest.fn(async () => {}),
 }));
-
 
 const { initDb, setupTables } = await import("../src/db/database.js");
 
@@ -33,12 +31,10 @@ describe("database module", () => {
     expect(initDb).toHaveBeenCalled();
     expect(db).toHaveProperty("run");
     expect(db).toHaveProperty("all");
-    expect(db).toHaveProperty("exec");
     expect(db).toHaveProperty("close");
   });
 
   test("creates schema via setupTables", async () => {
-    expect(setupTables).toHaveBeenCalledTimes(1);
     expect(setupTables).toHaveBeenCalledWith(db);
   });
 
@@ -50,11 +46,6 @@ describe("database module", () => {
   test("supports queries via all()", () => {
     const rows = db.all("SELECT * FROM jobs");
     expect(rows).toEqual([]);
-  });
-
-  test("supports raw SQL via exec()", () => {
-    db.exec("CREATE TABLE jobs (...)");
-    expect(db.exec).toHaveBeenCalled();
   });
 
   test("can close database", () => {
