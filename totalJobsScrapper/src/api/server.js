@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { initDb, setupTables } from "../db/database.js";
 import { startScheduler } from "../scheduler/job.js";
+import { exportJobsToCsv } from "../utils/exportJobsToCsv.js";
 
 dotenv.config();
 
@@ -44,6 +45,25 @@ app.get("/jobs/stats", async (req, res) => {
       totalJobs: total.count,
       topLocations: locations,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/jobs/export", async (req, res) => {
+  try {
+    const db = await initDb();
+    const filename = await exportJobsToCsv(db);
+
+    if (!filename) {
+      return res.status(400).json({
+        message: "No jobs available to export",
+      });
+    }
+
+    const filePath = `./exports/${filename}`;
+
+    res.download(filePath);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

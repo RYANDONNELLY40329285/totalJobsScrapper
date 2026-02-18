@@ -57,4 +57,6 @@ export async function exportJobsToCsv(db) {
 fs.writeFileSync(filePath, "\uFEFF" + csv, "utf8");
 
   console.log(`Jobs exported → ${filePath}`);
+
+  return filename;
 }

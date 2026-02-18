@@ -3,6 +3,9 @@ services:
     build: .
     ports:
       - "3000:3000"
+
+    volumes:
+      - ./exports:/app/exports
     command: npm start
 
   tests:
