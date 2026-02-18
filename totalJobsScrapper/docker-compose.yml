@@ -1,6 +1,10 @@
-version: "3.8"
-
 services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    command: npm start
+
   tests:
     build: .
     command: npm test
